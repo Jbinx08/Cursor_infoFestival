@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>우주 점프</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #140e33; color: #fffdf8; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+    body { display: grid; grid-template-rows: auto 1fr auto; min-height: 100%; }
+    header, footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; }
+    header strong { font-size: 1.05rem; }
+    #lives, #score { font-variant-numeric: tabular-nums; }
+    main { position: relative; min-height: 0; }
+    canvas { width: 100%; height: 100%; display: block; touch-action: none; background: #24165a; }
+    #overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(12, 8, 32, 0.55); }
+    #overlay[hidden] { display: none; }
+    .card { width: min(420px, 100%); padding: 28px 24px; text-align: center; background: #ffe566; color: #1b1233; border: 4px solid #1b1233; box-shadow: 8px 8px 0 #1b1233; }
+    h1 { margin: 0 0 8px; font-size: 2rem; }
+    p { margin: 0 0 18px; line-height: 1.45; }
+    button { min-height: 52px; padding: 0 22px; border: 4px solid #1b1233; background: #ff8d72; color: #1b1233; font: inherit; font-weight: 700; font-size: 1.1rem; box-shadow: 4px 4px 0 #1b1233; }
+    footer { color: #d7d0ff; font-size: 0.92rem; }
+    #jump { display: none; }
+    @media (pointer: coarse) {
+      body { grid-template-rows: auto 1fr auto auto; }
+      #jump { display: block; margin: 0 16px 16px; min-height: 64px; font-size: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>우주 점프</strong>
+    <span id="score">점수 0</span>
+    <span id="lives">목숨 3</span>
+  </header>
+  <main>
+    <canvas id="view" width="960" height="540"></canvas>
+    <div id="overlay">
+      <div class="card">
+        <h1 id="overlay-title">우주 점프</h1>
+        <p id="overlay-text">운석을 뛰어넘어 10점을 모아 봐. 스페이스 또는 화면을 누르면 점프해.</p>
+        <button id="action" type="button">시작</button>
+      </div>
+    </div>
+  </main>
+  <button id="jump" type="button">점프</button>
+  <footer>기획·디자인: 김민수</footer>
+  <script>
+    const canvas = document.getElementById("view");
+    const ctx = canvas.getContext("2d");
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlay-title");
+    const overlayText = document.getElementById("overlay-text");
+    const action = document.getElementById("action");
+    const scoreEl = document.getElementById("score");
+    const livesEl = document.getElementById("lives");
+    const W = 960;
+    const H = 540;
+    const GROUND = 430;
+    const WIN = 10;
+
+    const player = { x: 150, w: 58, h: 72, y: GROUND - 72, vy: 0 };
+    let rocks = [];
+    let stars = Array.from({ length: 40 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * 360,
+      r: Math.random() * 2 + 0.6
+    }));
+    let mode = "start";
+    let score = 0;
+    let lives = 3;
+    let spawn = 0;
+    let hurt = 0;
+    let last = 0;
+
+    function reset() {
+      player.y = GROUND - player.h;
+      player.vy = 0;
+      rocks = [];
+      score = 0;
+      lives = 3;
+      spawn = 0;
+      hurt = 0;
+      paintHud();
+    }
+
+    function paintHud() {
+      scoreEl.textContent = "점수 " + score;
+      livesEl.textContent = "목숨 " + lives;
+    }
+
+    function show(title, text, label) {
+      overlayTitle.textContent = title;
+      overlayText.textContent = text;
+      action.textContent = label;
+      overlay.hidden = false;
+    }
+
+    function hideOverlay() {
+      overlay.hidden = true;
+    }
+
+    function jump() {
+      if (mode !== "play") return;
+      if (player.y < GROUND - player.h - 1) return;
+      player.vy = -15.5;
+    }
+
+    function startGame() {
+      reset();
+      mode = "play";
+      hideOverlay();
+      last = 0;
+    }
+
+    function finish(next) {
+      mode = next;
+      if (next === "win") show("성공!", "운석 10개를 모두 넘었어.", "다시 하기");
+      else show("실패!", "목숨이 없어졌어. 다시 뛰어 봐.", "다시 하기");
+    }
+
+    function spawnRock() {
+      const tall = Math.random() < 0.35;
+      rocks.push({ x: W + 20, w: tall ? 46 : 62, h: tall ? 92 : 54, scored: false });
+    }
+
+    function hit(rock) {
+      return player.x < rock.x + rock.w - 8 &&
+        player.x + player.w > rock.x + 8 &&
+        player.y < GROUND &&
+        player.y + player.h > GROUND - rock.h + 6;
+    }
+
+    function frame(now) {
+      requestAnimationFrame(frame);
+      const dt = Math.min(32, last ? now - last : 16);
+      last = now;
+      if (mode === "play") {
+        const step = dt / 16.67;
+        player.vy += 0.72 * step;
+        player.y += player.vy * step;
+        if (player.y > GROUND - player.h) {
+          player.y = GROUND - player.h;
+          player.vy = 0;
+        }
+        spawn += dt;
+        if (spawn > 1300) {
+          spawn = 0;
+          spawnRock();
+        }
+        const speed = 6.2 + score * 0.18;
+        rocks.forEach((rock) => {
+          rock.x -= speed * step;
+          if (!rock.scored && rock.x + rock.w < player.x) {
+            rock.scored = true;
+            score += 1;
+            paintHud();
+            if (score >= WIN) finish("win");
+          }
+        });
+        rocks = rocks.filter((rock) => rock.x + rock.w > -20);
+        if (hurt > 0) hurt -= dt;
+        if (hurt <= 0 && mode === "play") {
+          for (const rock of rocks) {
+            if (!hit(rock)) continue;
+            lives -= 1;
+            hurt = 900;
+            paintHud();
+            if (lives <= 0) finish("lose");
+            break;
+          }
+        }
+      }
+      draw();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const sky = ctx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, "#2a1768");
+      sky.addColorStop(1, "#f08a5d");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#fff6c2";
+      stars.forEach((star) => {
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.fillStyle = "#1b1233";
+      ctx.fillRect(0, GROUND, W, H - GROUND);
+      ctx.fillStyle = "#7eebc8";
+      ctx.fillRect(0, GROUND, W, 8);
+      rocks.forEach((rock) => {
+        ctx.fillStyle = "#ff8d72";
+        ctx.fillRect(rock.x, GROUND - rock.h, rock.w, rock.h);
+        ctx.strokeStyle = "#1b1233";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(rock.x + 2, GROUND - rock.h + 2, rock.w - 4, rock.h - 4);
+      });
+      ctx.save();
+      if (hurt > 0 && Math.floor(hurt / 80) % 2 === 0) ctx.globalAlpha = 0.35;
+      ctx.fillStyle = "#ffe566";
+      roundRect(player.x, player.y, player.w, player.h, 16);
+      ctx.fill();
+      ctx.strokeStyle = "#1b1233";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.fillStyle = "#1b1233";
+      ctx.fillRect(player.x + 14, player.y + 22, 8, 8);
+      ctx.fillRect(player.x + 34, player.y + 22, 8, 8);
+      ctx.restore();
+    }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    action.addEventListener("click", () => {
+      if (mode === "start" || mode === "win" || mode === "lose") startGame();
+    });
+    document.getElementById("jump").addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      jump();
+    });
+    canvas.addEventListener("pointerdown", jump);
+    window.addEventListener("keydown", (event) => {
+      if (event.code === "Space" || event.code === "ArrowUp") {
+        event.preventDefault();
+        if (mode === "start" || mode === "win" || mode === "lose") startGame();
+        else jump();
+      }
+    });
+
+    show("우주 점프", "운석을 뛰어넘어 10점을 모아 봐. 스페이스 또는 화면을 누르면 점프해.", "시작");
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
