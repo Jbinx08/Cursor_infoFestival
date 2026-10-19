@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>게임</title>
+  <link rel="stylesheet" href="game.css" />
+</head>
+<body>
+  <header>
+    <strong id="title">게임</strong>
+    <span id="score"></span>
+    <span id="extra"></span>
+  </header>
+  <main>
+    <canvas id="view" width="960" height="540"></canvas>
+    <div id="overlay">
+      <div class="card">
+        <h1 id="overlay-title"></h1>
+        <p id="overlay-text"></p>
+        <button id="action" type="button">시작</button>
+      </div>
+    </div>
+  </main>
+  <div id="touch">
+    <button type="button" data-act="left">왼쪽</button>
+    <button type="button" data-act="down">아래</button>
+    <button type="button" data-act="up">위</button>
+    <button type="button" data-act="right">오른쪽</button>
+    <button type="button" data-act="action">행동</button>
+  </div>
+  <footer id="credit"></footer>
+  <script src="game.config.js"></script>
+  <script src="engine.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

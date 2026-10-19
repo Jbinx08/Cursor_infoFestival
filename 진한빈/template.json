@@ -1,0 +1,40 @@
+{
+  "id": "monster-survival",
+  "name": "몬스터 서바이벌",
+  "entry": "index.html",
+  "edit": "게임 규칙은 game.config.json 을 고친다. game.config.js 의 GAME_CONFIG 도 같은 내용으로 맞춘다.",
+  "controls": "방향키로 움직이고 스페이스로 가까이 있는 몬스터를 공격한다.",
+  "mapLegend": {},
+  "configSchema": {
+    "texts": [
+      "start",
+      "win",
+      "lose"
+    ],
+    "player": [
+      "name",
+      "color",
+      "sprite"
+    ],
+    "rules": [
+      "timeSec",
+      "lives",
+      "speed"
+    ],
+    "map": [
+      "background",
+      "accent"
+    ],
+    "special": [
+      "aura"
+    ]
+  },
+  "tests": [
+    "시작 화면",
+    "조작",
+    "점수 또는 시간",
+    "성공",
+    "실패",
+    "다시 하기"
+  ]
+}

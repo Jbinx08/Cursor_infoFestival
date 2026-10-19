@@ -1,0 +1,24 @@
+window.GAME_CONFIG = {
+  "title": "몬스터를 피해라!",
+  "creator": "진한빈",
+  "texts": {
+    "start": "마법사 옷을 입은 전사로, 어두운 던전에서 3분 동안 살아남아. WASD로 움직이고, 마우스 클릭으로 공격해. 몬스터는 여러 종류야.",
+    "win": "끝까지 버텼어!",
+    "lose": "몬스터에게 당했어."
+  },
+  "player": {
+    "name": "전사",
+    "color": "#7c6cff",
+    "sprite": "assets/custom/warrior-mage.jpg"
+  },
+  "rules": {
+    "timeSec": 180,
+    "lives": 3,
+    "speed": 1
+  },
+  "map": {
+    "background": "#1a120e",
+    "accent": "#e7a84a"
+  },
+  "special": []
+};
